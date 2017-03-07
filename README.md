@@ -60,13 +60,18 @@ elsewhere.
 
 This is close to the figure being used in several production mesh
 networks. This begins to stress out the cpu in mips routers.
+The route injection itself takes many seconds for the daemon
+to process.
 
 ## rtod -r 2048
 
 This starts to stress out local route distribution mechanisms
 over wifi multicast, and the protocol itself.
 
-Low end ARM and MIPs CPUs start getting warm.
+Low end ARM and MIPs CPUs start getting warm. There is often
+a network burp while the router getting these routes sorts them out.
+
+Routers using slow multicast start dropping off the network.
 
 ## rtod -r 4096
 
@@ -74,17 +79,20 @@ At this level the local network daemon tends to run out of cpu on
 just merging in the local kernel table. Other daemons interpreting
 the protocol begin to struggle also.
 
-Low end ARM and MIPs CPUs get very warm.
+Low end ARM and MIPs CPUs get very warm. In fact, so do low end
+X86_64 platforms like the pcengines apu2.
 
 Routers using slow multicast drop off the network completely.
 
 ## rtod -r 10000
 
-This tends to completely heat the local daemon with "interesting"
+This tends to completely overburden the local daemon with "interesting"
 results on the rest of the network. Multicast becomes a huge 
 bottleneck. Updates lag 10s of seconds, even minutes, behind.
 
-Other daemons strain to keep up. Bad things happen.
+The injected router falls off the network, having partially announced
+its tables, while other daemons strain to keep up and re-announce what
+they got while its already become invalid. Many. Bad. Things. Happen.
 
 Did I mention you should not run this on a production network?
 
