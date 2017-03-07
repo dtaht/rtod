@@ -19,7 +19,7 @@ Still, in addition to disrupting your routing until many minutes after the test 
 
 - You may need to clean up nohup.out or kill off processes manually.
 
-- You can easily melt a processor.
+- You can easily melt a processor. Or: destroy your flash if you are keeping extensive logging on it.
 
 - You might end up with other system critical processes, like network manager or odhcpd, hung or spinning madly.
 
@@ -31,7 +31,7 @@ Still, in addition to disrupting your routing until many minutes after the test 
 
 - You might contribute to global warming.
 
-Be *careful* with this tool.
+Be *careful* with this tool. Lest you think I'm being overly dire - I've already done all the above to myself while testing. I'm trying to make things better by adding compute bounds, testing under loads induced by flent, better error handling, and so on.
 
 # Setup
 
