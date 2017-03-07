@@ -187,12 +187,13 @@ trap teardownall SIGABRT SIGQUIT
 
 # main program
 
-while getopts "s:H:Khr:t:n:i:m:p:j:J:R:" Option
+while getopts "Is:H:Khr:t:n:i:m:p:j:J:R:" Option
 do
   case $Option in
     j) JITTERE=${OPTARG};; # unimplemented
     J) JITTERR=${OPTARG};; # unimplemented
     s) SS=${OPTARG};; # unimplemented
+    I) INVALID=${OPTARG};; # install some invalid routes
     H) HOST=${OPTARG};;
     K) KILLME=1;;
     p) PROTO=${OPTARG};;
