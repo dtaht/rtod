@@ -135,17 +135,17 @@ ipv6 address.
 
 You can setup an alternative interface to use that is not a dummy.
 
-if dummy interfaces are not available, and no iface is specified,
+If dummy interfaces are not available, and no iface is specified,
 the ip6-localnet interface is used.
 
 ## -p PROTO
 
 rtod uses a separate kernel protocol table to inject and manage
 routes and addresses. The default is proto 50, which is unallocated
-by the ietf and any other daemon I'm aware of. You can
-
-You should not - unless you want to confuse it - inject routes
-into the kernel tables being managed by your daemons in the first place.
+by the ietf and any other daemon I'm aware of. You can use any proto
+you want, but, you should not - unless you want to confuse them -
+inject routes into the kernel tables being managed by your daemons
+in the first place.
 
 This include static and boot routes as the rtod cleanup routine will wipe 
 those out, too.
