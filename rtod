@@ -1,0 +1,250 @@
+#!/bin/sh
+# rtod "Routing tables of Death"
+# This script exercises the routing protocol and daemons involved by
+# injecting a definable number of ipv6 routes for a limited time.
+# The default is 256 routes for 10 minutes, using proto table 50
+# on a dummy interface of rtod0, using the unallocated fc::/8 ULA space.
+# It has an upper limit of 64k routes.
+
+# These variables can be overridden from the command line
+
+SELF=$0
+ARGS="$@"
+HOST=`hostname`
+EXPIRES=600
+ROUTES=256
+IFACE=rtod0
+PROTO=50
+NOEXPIRES=0
+KILLME=0
+JITTERE=0
+JITTERR=0
+RTABLE="" # external route table to recreate
+SS=0
+PLEN=64 # FIXME: a good idea to start testing variable length prefixes too
+
+# You should not touch anything from here
+
+# Randomize the starting point one day
+#R1=${RANDOM}
+#R2=${RANDOM}
+#R=`expr ${R1} \* ${R2}`
+
+# But for now:
+
+R=1
+
+
+export PREFIX PROTO IFACE ROUTES EXPIRES HOST KILLME
+export PLEN JITTERE JITTERR
+
+# Using a dummy interface leads to saner stats if available.
+
+setup() {
+
+ip link add ${IFACE}test type dummy 2> /dev/null
+
+if [ $? -ne "0" ] 
+then
+	echo "no dummy interface available, using ip6-localnet"
+	IFACE=ip6-localnet
+	# some systems don't even define that much
+else
+	ip link del ${IFACE}test type dummy 2> /dev/null
+	ip link add ${IFACE} type dummy 2> /dev/null
+	ip link set $IFACE up 2> /dev/null
+fi
+
+
+# First add a covering route to add to the fun
+
+EXP2=$EXPIRES
+EXP3=$EXPIRES
+
+# and let it stick around less...
+
+if [ "$EXPIRES" -gt 200 ]
+then
+EXP2=`expr $EXP2 - 60`
+EXP3=`expr $EXPIRES - 120`
+fi 
+
+# Does expires work? Expires is a really nice safety valve to have
+# but only works correctly in iproute 4.9 and above
+
+EXPIRESTR="expires $EXPIRES"
+
+ip -6 route replace ${PREFIX}:/48 dev $IFACE $EXPIRESTR \
+	                      proto $PROTO 2> /dev/null
+
+if [ "$?" -ne "0" ]
+then
+	EXPIRESTR=""
+	echo "no ip route expires support - falling back to $SELF -K"
+	if [ $KILLME = 0 ]
+	then
+		nohup "$SELF" -t $EXPIRES -i $IFACE -r $ROUTES -K $ARGS &
+	fi
+	ip -6 route replace ${PREFIX}:/48 dev $IFACE proto $PROTO
+	ip -6 route replace ${PREFIX}:/56 dev $IFACE proto $PROTO
+	ip -6 addr replace ${PREFIX}:1/48 dev $IFACE \
+		valid_lft $EXPIRES preferred_lft $EXPIRES noprefixroute
+	ip -6 addr replace ${PREFIX}:2/64 dev $IFACE \
+		valid_lft $EXPIRES preferred_lft $EXPIRES
+else
+	ip -6 route replace ${PREFIX}:/56 dev $IFACE expires $EXP3 proto $PROTO
+	ip -6 addr  replace ${PREFIX}:1/48 dev $IFACE \
+		valid_lft $EXPIRES preferred_lft $EXPIRES noprefixroute
+	ip -6 addr replace ${PREFIX}:2/64 dev $IFACE \
+		valid_lft $EXPIRES preferred_lft $EXPIRES
+
+fi
+
+# Does source specific work? Requires IPV6SUBTREES in the kernel
+
+	ip -6 route replace from ${PREFIX}:/48 via ${PREFIX}:1\
+			    dev $IFACE $EXPIRESTR \
+	                    proto $PROTO 2> /dev/null
+
+if [ $? -ne 0 -a $SS -ne 0 ]
+then
+	S1=$SS
+	for i in `seq $R $ROUTERS`
+	do
+		S2=`expr $i % $S1`
+		if [ $S2 = 0 ]
+		then
+		# FIXME, unfinished
+
+		ip -6 route replace from ${PREFIX}:/$P2 \
+			    via ${PREFIX}:1\
+			    dev $IFACE $EXPIRESTR \
+	                    proto $PROTO 2> /dev/null
+		fi
+	done
+else
+	echo "Please compile IPV6SUBTREES into your kernel"
+fi
+
+}
+
+teardown() {
+if [ $IFACE -ne "ip6-localhost" ]
+then
+	ifconfig $IFACE # get some stats
+	ip link del $IFACE type dummy 2&1> /dev/null
+fi
+}
+
+del() {
+	ip -6 route flush dev $IFACE proto $PROTO
+}
+
+
+teardownall() {
+	del
+	teardown
+}
+
+killme() {
+	sleep $EXPIRES
+	teardownall
+}
+
+# mainline seq supports printf, busybox does not
+
+add() {
+if [ $NOEXPIRES = 0 ]
+then
+	for i in `seq $R $ROUTES`
+	do
+		local E2=`printf %x ${i}`
+		ip -6 route replace ${PREFIX}${E2}::/$PLEN dev $IFACE \
+			proto $PROTO expires $EXPIRES
+	done
+else
+	for i in `seq $R $ROUTES`
+	do
+		local E2=`printf %x ${i}`
+		ip -6 route replace ${PREFIX}${E2}::/$PLEN dev $IFACE \
+			proto $PROTO
+	done
+fi
+}
+
+
+usage() {
+echo \
+"rtod -r number_of_routes -t time_to_keep_them -p protocol table\n 
+      -s source specific -H host -K (killme) -m metric -i interface\n
+      -M random metric max -j expire jitter -J renew jitter -F dumpfile"
+exit -1
+}
+
+# Kill our routes on an abort
+
+trap teardownall SIGABRT SIGQUIT
+
+# main program
+
+while getopts "s:H:Khr:t:n:i:m:p:j:J:R:" Option
+do
+  case $Option in
+    j) JITTERE=${OPTARG};; # unimplemented
+    J) JITTERR=${OPTARG};; # unimplemented
+    s) SS=${OPTARG};; # unimplemented
+    H) HOST=${OPTARG};;
+    K) KILLME=1;;
+    p) PROTO=${OPTARG};;
+    t) EXPIRES=${OPTARG};;
+    M) RANDMETRIC=${OPTARG};; # unimplemented
+    m) METRIC=${OPTARG};;
+    r) ROUTES=${OPTARG};;
+    R) RTABLE=${OPTARG};; # unimplemented
+    i) IFACE=${OPTARG};;
+    h) usage ;;
+    *) usage $E_OPTERROR;;   # DEFAULT
+  esac
+  OPRIND=${OPTIND}
+done
+
+# IPv6 Prefix generator
+# Crudely but consistently generate a random PREFIX
+# use the fc range to keep it clear
+
+a=`echo $HOST | md5sum`
+
+# You'd think the ietf standards would let you just
+# punch in a hex string without colons. But noooo....
+# bash version:
+# PREFIX1=fc${a:0:2}:${a:3:4}:${a:7:4}:
+# universal version:
+
+PREFIX=fc`echo $a | awk \
+	'{print (substr($1,0,2)":"substr($1,4,4)":"substr($1,8,4)":")}'`
+
+if [ $KILLME = 1 ]
+then
+	sleep $EXPIRES
+	del
+	teardown
+
+else
+	setup
+	add
+	echo "$HOST has $PREFIX from $R to $ROUTES \
+for $EXPIRES sec"
+fi
+
+if [ "$JITTERE" -ne 0 -o "$JITTERR" -ne 0 ]
+then
+:
+fi
+
+# It seems possible to inject routes we cannot forward - because users can specify non - fe80 next hops
+# ip -6 route replace fc02:b738:e988::/62 from fc02:b738:e988::/48 via fe80::4493:14ff:fe70:954e dev eno1 proto 50
+#root@dancer:~/git/rtod# ip -6 route replace fc02:b738:e988::/62 from fc02:b738:e988::/48 via fc02:2:1::1 dev eno1 proto 50RTNETLINK answers: No route to host
+#But this will work, even if it is non-sensical in some respects
+#root@dancer:~/git/rtod# ip route add fc02:2:1::1 dev eno1
+#root@dancer:~/git/rtod# ip -6 route replace fc02:b738:e988::/62 from fc02:b738:e988::/48 via fc02:2:1::1 dev eno1 proto 50
+
