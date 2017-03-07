@@ -167,6 +167,7 @@ del() {
 teardownall() {
 	del
 	teardown
+	exit 0
 }
 
 killme() {
