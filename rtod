@@ -20,6 +20,7 @@ KILLME=0
 JITTERE=0
 JITTERR=0
 RTABLE="" # external route table to recreate
+NOHUP=`which nohup`
 SS=0
 PLEN=64 # FIXME: a good idea to start testing variable length prefixes too
 
@@ -34,9 +35,15 @@ PLEN=64 # FIXME: a good idea to start testing variable length prefixes too
 
 R=1
 
-
 export PREFIX PROTO IFACE ROUTES EXPIRES HOST KILLME
 export PLEN JITTERE JITTERR
+
+sanity_check() {
+	if [ -z "$NOHUP" ] 
+	then
+		NOHUP=`which sh`	
+	fi
+}
 
 # Using a dummy interface leads to saner stats if available.
 
@@ -84,7 +91,7 @@ then
 	echo "no ip route expires support - falling back to $SELF -K"
 	if [ $KILLME = 0 ]
 	then
-		nohup "$SELF" -t $EXPIRES -i $IFACE -r $ROUTES -K $ARGS &
+		$NOHUP "$SELF" -t $EXPIRES -i $IFACE -r $ROUTES -K $ARGS &
 	fi
 	ip -6 route replace ${PREFIX}:/48 dev $IFACE proto $PROTO
 	ip -6 route replace ${PREFIX}:/56 dev $IFACE proto $PROTO
@@ -130,7 +137,7 @@ fi
 }
 
 teardown() {
-if [ "$IFACE" != "ip6-localhost" ]
+if [ "$IFACE" != "lo" ]
 then
 	ifconfig $IFACE # get some stats
 	ip link del $IFACE type dummy 2&1> /dev/null
@@ -242,6 +249,12 @@ if [ "$JITTERE" -ne 0 -o "$JITTERR" -ne 0 ]
 then
 :
 fi
+
+# Originally I had this exit entirely into the background
+# as I was regularly causing disconnects and monitoring with
+# nohup. Turns out lede doesn't have nohup.
+
+wait
 
 # It seems possible to inject routes we cannot forward - because users can specify non - fe80 next hops
 # ip -6 route replace fc02:b738:e988::/62 from fc02:b738:e988::/48 via fe80::4493:14ff:fe70:954e dev eno1 proto 50
