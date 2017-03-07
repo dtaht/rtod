@@ -16,6 +16,9 @@ to clean up after itself automatically. It might take 10s of
 minutes for the network to recover, but it will, eventually. Usually.
 
 You may need to clean up nohup.out or kill off processes manually.
+You might get into a state where you have to power cycle the whole
+network. You might contribute to global warming. Be *careful* with
+this tool.
 
 # Setup
 
@@ -110,13 +113,13 @@ pdsh -g chips rtod -r 256 -H mytest
 This is used by rtod internally to make sure it
 kills itself off and flushes its routes.
 
-When used (in desperation) at the command line, you can say:
+When used (often in desperation) at the command line, you can say:
 
 ````
 rtod -K -t 0 
 ````
 
-to have it flush all routes immediately
+To have it flush all routes immediately.
 
 ## -r routes
 
@@ -124,7 +127,7 @@ Injects this number of routes, in the range 1-65534.
 
 ## -H hostname
 
-specify a different hostname to use. The hostname is used to
+Specify a different hostname to use. The hostname is used to
 generate a md5 hash that is then turned into a usually distinct
 ipv6 address. 
 
@@ -167,7 +170,7 @@ The duration of the test before routes are flushed.
 
 ## -m metric
 
-use a different metric to insert the routes than the default
+Use a different metric to insert the routes than the default.
 
 Unimplemented.
 
