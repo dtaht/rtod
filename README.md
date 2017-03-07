@@ -15,12 +15,14 @@ modes tends to make tcp connections fail - so it has multiple means
 to clean up after itself automatically. It might take 10s of
 minutes for the network to recover, but it will, eventually. Usually.
 
-You still may need to clean up nohup.out or kill off processes manually.
+You may need to clean up nohup.out or kill off processes manually.
+
+You can easily melt a processor.
 
 You might end up with other system critical processes, like network 
 manager or odhcpd, hung or spinning madly. You might run your
-kernel into the ground. You might run out of memory. You can easily
-melt a processor.  
+kernel into the ground. You might run out of memory and engage
+the oom killer on stuff you don't want killed.
 
 You might get your whole network into a state where you have to
 power cycle every router simultaneously.
@@ -46,22 +48,23 @@ Test on a small scale, first. Make absolutely sure nothing escapes.
 # Uses: standalone
 
 rtod's defaults are enough to mildly stress out most mesh networks.
-It adds 256 routes for lasting 600 seconds. This generally does
-no damage.
+They add 256 routes for 600 seconds. This generally does no damage.
 
-The default is useful for reliably repeating routing behaviors
+These defaults are useful for reliably repeating routing behaviors
 that are expected and normal, and observing metric evolution
 elsewhere.
 
 ## rtod -r 1024
 
 This is close to the figure being used in several production mesh
-networks. This begins to stress out the local cpu in mips routers.
+networks. This begins to stress out the cpu in mips routers.
 
 ## rtod -r 2048
 
 This starts to stress out local route distribution mechanisms
 over wifi multicast, and the protocol itself.
+
+Low end ARM and MIPs CPUs start getting warm.
 
 ## rtod -r 4096
 
@@ -70,6 +73,8 @@ just merging in the local kernel table. Other daemons interpreting
 the protocol begin to struggle also.
 
 Low end ARM and MIPs CPUs get very warm.
+
+Routers using slow multicast drop off the network completely.
 
 ## rtod -r 10000
 
@@ -81,10 +86,10 @@ Other daemons strain to keep up. Bad things happen.
 
 Did I mention you should not run this on a production network?
 
-In most of my tests thus far, anything about 2000 total routes begins
+In most of my tests thus far, anything above 2000 total routes begins
 to degrade the connectivity of a network severely. With some tuning,
 I've got babeld to about 5k routes but it is still barely hanging on
-at that level, and slow multicast drops off almost completely.
+at that level,
 
 ## rtod -r 64000
 
@@ -101,8 +106,8 @@ on getting routes out of the kernel.
 pdsh -g chips rtod -r 128 # push out 512 routes total to my 4 "c.h.i.p"s.
 ````
 
-This is a better test of what actually happens with multiple routers in
-play, in multiple places, and more complex scenarios can be easily
+This is a much better test of what actually happens with multiple routers
+in play, in multiple places, and more complex scenarios can be easily
 simulated. I have one with 32 simulated routers over a network diameter
 of 12 hops and 3k routes, for example.
 
@@ -204,7 +209,7 @@ via
 ip route restore proto 50 < route_table_dump_file
 ````
 
-Unimplemented, as it has a flaw of not inserting the expires figure,
+de-implemented, as it has a flaw of not inserting the expires figure,
 and the whole point of rtod is to be able to survive abuse such
 as this.
 
