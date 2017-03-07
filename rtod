@@ -21,6 +21,7 @@ JITTERE=0
 JITTERR=0
 RTABLE="" # external route table to recreate
 NOHUP=`which nohup`
+NODUMMY=0
 SS=0
 PLEN=64 # FIXME: a good idea to start testing variable length prefixes too
 
@@ -58,25 +59,29 @@ sanity_check() {
 			HOST=$HOSTNAME
 		fi
 	fi
-}
 
-# Using a dummy interface leads to saner stats if available.
+# Dummy interfaces are not standard
+# But: using a dummy interface leads to saner stats if available.
+
+	ip link add ${IFACE}test type dummy 2> /dev/null
+	if [ "$?" != "0" ] 
+	then
+		NODUMMY=1
+		echo "No dummy interface available, using lo"
+		IFACE=lo
+		# some systems don't even define that much. lo0?
+	fi
+	ip link del ${IFACE}test type dummy 2> /dev/null
+	
+}
 
 setup() {
 
-ip link add ${IFACE}test type dummy 2> /dev/null
-
-if [ "$?" = "0" ] 
+if [ "NODUMMY" = "0" ] 
 then
-	ip link del ${IFACE}test type dummy 2> /dev/null
 	ip link add ${IFACE} type dummy 2> /dev/null
 	ip link set $IFACE up 2> /dev/null
-else
-	echo "no dummy interface available, using lo"
-	IFACE=lo
-	# some systems don't even define that much
 fi
-
 
 # First add a covering route to add to the fun
 
