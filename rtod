@@ -44,15 +44,15 @@ setup() {
 
 ip link add ${IFACE}test type dummy 2> /dev/null
 
-if [ $? -ne "0" ] 
+if [ "$?" = "0" ] 
 then
-	echo "no dummy interface available, using ip6-localnet"
-	IFACE=ip6-localnet
-	# some systems don't even define that much
-else
 	ip link del ${IFACE}test type dummy 2> /dev/null
 	ip link add ${IFACE} type dummy 2> /dev/null
 	ip link set $IFACE up 2> /dev/null
+else
+	echo "no dummy interface available, using lo"
+	IFACE=lo
+	# some systems don't even define that much
 fi
 
 
@@ -80,6 +80,7 @@ ip -6 route replace ${PREFIX}:/48 dev $IFACE $EXPIRESTR \
 if [ "$?" -ne "0" ]
 then
 	EXPIRESTR=""
+	NOEXPIRES=1
 	echo "no ip route expires support - falling back to $SELF -K"
 	if [ $KILLME = 0 ]
 	then
@@ -106,7 +107,7 @@ fi
 			    dev $IFACE $EXPIRESTR \
 	                    proto $PROTO 2> /dev/null
 
-if [ $? -ne 0 -a $SS -ne 0 ]
+if [ "$?" -ne "0" -a "$SS" -ne "0" ]
 then
 	S1=$SS
 	for i in `seq $R $ROUTERS`
@@ -129,7 +130,7 @@ fi
 }
 
 teardown() {
-if [ $IFACE -ne "ip6-localhost" ]
+if [ "$IFACE" != "ip6-localhost" ]
 then
 	ifconfig $IFACE # get some stats
 	ip link del $IFACE type dummy 2&1> /dev/null
@@ -154,7 +155,7 @@ killme() {
 # mainline seq supports printf, busybox does not
 
 add() {
-if [ $NOEXPIRES = 0 ]
+if [ "$NOEXPIRES" = "0" ]
 then
 	for i in `seq $R $ROUTES`
 	do
