@@ -10,7 +10,7 @@
 
 SELF=$0
 ARGS="$@"
-HOST=`hostname`
+HOST=""
 EXPIRES=600
 ROUTES=256
 IFACE=rtod0
@@ -42,6 +42,21 @@ sanity_check() {
 	if [ -z "$NOHUP" ] 
 	then
 		NOHUP=`which sh`	
+	fi
+# There is seemingly no standard for getting the hostname
+	if [ -z $HOST ] 
+	then
+		if [ -z "$HOSTNAME" ]
+		then
+			HOST=`hostname -f`
+			if [ -z "$HOST" ]
+			then
+				echo "Please set a hostname"
+				exit 1
+			fi
+		else
+			HOST=$HOSTNAME
+		fi
 	fi
 }
 
@@ -186,7 +201,7 @@ echo \
 "rtod -r number_of_routes -t time_to_keep_them -p protocol table\n 
       -s source specific -H host -K (killme) -m metric -i interface\n
       -M random metric max -j expire jitter -J renew jitter -F dumpfile"
-exit -1
+exit 1
 }
 
 # Kill our routes on an abort
@@ -216,6 +231,8 @@ do
   esac
   OPRIND=${OPTIND}
 done
+
+sanity_check
 
 # IPv6 Prefix generator
 # Crudely but consistently generate a random PREFIX
@@ -252,7 +269,7 @@ fi
 
 # Originally I had this exit entirely into the background
 # as I was regularly causing disconnects and monitoring with
-# nohup. Turns out lede doesn't have nohup.
+# nohup. Turns out lede doesn't have nohup. Or hostname
 
 wait
 
