@@ -15,10 +15,19 @@ modes tends to make tcp connections fail - so it has multiple means
 to clean up after itself automatically. It might take 10s of
 minutes for the network to recover, but it will, eventually. Usually.
 
-You may need to clean up nohup.out or kill off processes manually.
-You might get into a state where you have to power cycle the whole
-network. You might contribute to global warming. Be *careful* with
-this tool.
+You still may need to clean up nohup.out or kill off processes manually.
+
+You might end up with other system critical processes, like network 
+manager or odhcpd, hung or spinning madly. You might run your
+kernel into the ground. You might run out of memory. You can easily
+melt a processor.  
+
+You might get your whole network into a state where you have to
+power cycle every router simultaneously.
+
+You might contribute to global warming.
+
+Be *careful* with this tool.
 
 # Setup
 
