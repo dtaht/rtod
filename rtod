@@ -262,10 +262,10 @@ then
 	teardown
 
 else
-	setup
-	add
 	echo "$HOST has $PREFIX from $R to $ROUTES \
 for $EXPIRES sec"
+	setup
+	add
 fi
 
 if [ "$JITTERE" -ne 0 -o "$JITTERR" -ne 0 ]
