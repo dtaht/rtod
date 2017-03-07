@@ -15,7 +15,7 @@ modes tends to make tcp connections fail - so it has multiple means
 to clean up after itself automatically. You will certainly see
 network routing misbehave badly - and it might take 10s of
 minutes for the network to recover, but it will, eventually. Usually.
-Still, in addition to disrupting your routing until many minutes after the test ends:
+Still, in addition to potentially disrupting your routing until many minutes after the test ends:
 
 - You may need to clean up nohup.out or kill off processes manually.
 
